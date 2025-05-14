@@ -25,6 +25,12 @@ function normalizeAndCheck(input) {
       regex: /^\?\?$/,
       extract: () => ({ name: null, count: null, month: null, day: null, start_h: null, end_h: null })
     },
+    {
+      pattern_id: 1,
+      description: '??',
+      regex: /^\？\？$/,
+      extract: () => ({ name: null, count: null, month: null, day: null, start_h: null, end_h: null })
+    },
     /*{
       pattern_id: 1,
       description: '+-',
@@ -80,12 +86,6 @@ function normalizeAndCheck(input) {
       pattern_id: 3,
       description: '[Name]-N@MM/DD, H-H',
       regex: /^(.*?)\-(\d{1,2})@(\d{1,2})\/(\d{1,2}),(\d{1,2})-(\d{1,2})$/,
-      extract: ([, name, count, mm, dd, h1, h2]) => ({ name, count, month: mm, day: dd, start_h: h1, end_h: h2 })
-    },
-    {
-      pattern_id: 3,
-      description: '[Name]-N@MM/DD H-H',
-      regex: /^(.*?)\-(\d{1,2})@(\d{1,2})\/(\d{1,2}) (\d{1,2})-(\d{1,2})$/,
       extract: ([, name, count, mm, dd, h1, h2]) => ({ name, count, month: mm, day: dd, start_h: h1, end_h: h2 })
     },
     {

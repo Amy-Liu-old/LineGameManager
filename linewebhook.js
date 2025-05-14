@@ -339,8 +339,8 @@ app.post('/webhook', line.middleware(config), async (req, res) => {
             type: 'text',
             text: '',
           };
-          flexMessage.text = '目前有多團來指定場次';
-          flexMessage.text = 'Ex: +1@5/16,9-12, -1@6/7,14-17';
+          flexMessage.text = '目前有多團需指定場次';
+          flexMessage.text += '\nEx: +1@5/16,9-12\nEx: -1@6/7,14-17';
           flexMessage.text += '\n或輸入 ?? 以選取報名場次';
           replyMessages.push(flexMessage);
           await client.replyMessage(event.replyToken, replyMessages);
