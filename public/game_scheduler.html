@@ -1,0 +1,589 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Game Scheduler</title>
+  <style>
+    @media (min-width: 768px) {
+        .day-card {
+            min-width: 150px;
+            width: 150px;
+        }
+    }
+    .container {
+    margin: 0 auto;
+    width: 80%;
+    }
+    .container p {
+     margin: 0.5rem 0;
+    }
+    .action-section {
+    display: flex;
+    align-items: center;
+    gap: 1rem; /* spacing between text and button */
+    flex-wrap: wrap; /* for better mobile layout */
+    }
+    body { margin: 0;       font-family: 'Baloo 2', sans-serif; 
+     background-color: #3cc0c3;
+        color: rgb(0, 48, 61);
+    }
+    header, main { padding: 1rem; }
+    header {
+        
+      border-bottom: 1px solid #ccc;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    button {
+        width: auto;
+        padding: 10px;
+        margin: 1%;
+        border: none;
+        border-radius: 10px;
+        font-size: 0.8rem;
+        cursor: pointer;
+        background-color: #00a246;
+        color: white;
+        transition: background-color 0.3s ease;
+        display: inline-block; /* Prevents expanding to full parent width */
+        white-space: nowrap; /* Prevents text wrapping */
+    }
+
+    button:hover {
+        background-color: #04a145;
+    }
+    .calendar {
+      display: flex;
+      overflow-x: auto;
+      /*padding: 1rem 0;*/
+    }
+
+    .day-card h3 {  height: fit-content;text-align: center;}
+
+    .day-card {
+    min-width: 200px; /* or 150px, 180px — adjust as needed */
+    width: 200px;
+    display: grid;
+    grid-template-rows: repeat(19, 70px); /* 6:00–24:00 */
+    border: 1px #6c7072;
+    /*margin-top: 0;*/
+    gap: 0 1px; /* No gaps between grid rows */
+    }
+
+    .slot, .occupied {
+    height: 100%;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    overflow: hidden;
+    }
+
+
+    .occupied {
+    background:  hwb(42 68% 2%);
+    border: 1px solid #667074;
+    border-radius: 6px;
+    }
+    .slot.selectable {
+    cursor: pointer;
+    background: #e1fafb; /* 淡綠 */
+    border: 0.5px solid #667074;
+    }
+    .slot.selectable:hover {
+    background-color: #b0d3e2;
+    }
+    .game-link {
+      color: rgb(7, 118, 198);
+      cursor: pointer;
+      text-decoration: underline;
+    }
+
+    .game-info {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background-color: hwb(42 68% 2%);
+    padding: 0 4px;
+    height: 100%;
+    font-size: 1rem;
+    }
+
+    .flat-button {
+    padding: 2px 8px;
+    font-size: 0.75rem;
+    border: none;
+    border-radius: 8px;
+    background-color: #00a246;
+    color: white;
+    white-space: nowrap;
+    cursor: pointer;
+    }
+    .flat-button:hover {
+    background-color: #00a246;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="container">
+  <div class="action-section">
+    <button class="button" onclick="openCreateGameForm({
+        start_hour: 9,         // e.g. 14
+        end_hour: 12,
+        leader_name:window.userName,
+        is_doulbe:true,
+        max_number:8,
+        points:25,
+        low_level:3,
+        high_level:8,
+        price:250,
+        member_price:250,
+        ball_included: true,
+        has_duece: false,
+        is_perweek: true,
+        skip_thisweek: false,
+        skip_forever: false,
+        create_line_id:window.userId,
+        create_line_group:window.groupId
+    })">新增暢打</button> 或者<p> 點選使用的日期/起始時段</p>
+  </div> 
+</div>
+</header>
+
+<main>
+  <div class="calendar" id="calendar"></div>
+</main>
+
+<!-- Game Create/Update Modal -->
+<div id="gameModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:#00000066; justify-content:center; align-items:center;">
+  <div style="background:white; padding:1rem; border-radius:8px; max-width:400px; width:100%;">
+    <h3 id="modalTitle">新增暢打團</h3>
+      <form id="gameForm" style="display:none;">
+        <input type="hidden" name="id" />
+        <div><label>團名: <input name="name" size="30" maxlength="30" required/></label></div>
+        <div><label>團主: <input name="leader_name" required/></label></div>
+        <div><label>日期: <input type="date" id="gameDate" name="date" required/></label></div>
+        <div><label>開始時間:  <select name="start_hour">
+            <option value="6">6</option>
+            <option value="7">7</option>
+            <option value="8">8</option>
+            <option value="9">9</option>
+            <option value="10">10</option>
+            <option value="11">11</option>
+            <option value="12">12</option>
+            <option value="13">13</option>
+            <option value="14">14</option>
+            <option value="15">15</option>
+            <option value="16">16</option>
+            <option value="17">17</option>
+            <option value="18">18</option>
+            <option value="19">19</option>
+            <option value="20">20</option>
+            <option value="21">21</option>
+            <option value="22">22</option>
+            <option value="23">23</option>
+            <option value="24">24</option>
+          </select>
+        </label></div>
+        <div><label>結束時間: <select name="end_hour">
+            <option value="6">6</option>
+            <option value="7">7</option>
+            <option value="8">8</option>
+            <option value="9">9</option>
+            <option value="10">10</option>
+            <option value="11">11</option>
+            <option value="12">12</option>
+            <option value="13">13</option>
+            <option value="14">14</option>
+            <option value="15">15</option>
+            <option value="16">16</option>
+            <option value="17">17</option>
+            <option value="18">18</option>
+            <option value="19">19</option>
+            <option value="20">20</option>
+            <option value="21">21</option>
+            <option value="22">22</option>
+            <option value="23">23</option>
+            <option value="24">24</option>
+          </select></label></div>
+        <div>
+            <label>程度: 
+        <select name="low_level">
+            <option value="1">新手階 (1)</option>
+            <option value="2">新手階 (2)</option>
+            <option value="3">新手階 (3)</option>
+            <option value="4">初階 (4)</option>
+            <option value="5">初階 (5)</option>
+            <option value="6">初中階 (6)</option>
+            <option value="7">初中階 (7)</option>
+            <option value="8">中階 (8)</option>
+            <option value="9">中階 (9)</option>
+            <option value="10">中進階 (10)</option>
+            <option value="11">中進階 (11)</option>
+            <option value="12">中進階 (12)</option>
+            <option value="13">高階 (13)</option>
+            <option value="14">高階 (14)</option>
+            <option value="15">高階 (15)</option>
+            <option value="16">職業級 (16)</option>
+            <option value="17">職業級 (17)</option>
+            <option value="18">職業級 (18)</option>
+          </select>
+          ~
+          <select name="high_level">
+            <!-- same as above -->
+            <option value="1">新手階 (1)</option>
+            <option value="2">新手階 (2)</option>
+            <option value="3">新手階 (3)</option>
+            <option value="4">初階 (4)</option>
+            <option value="5">初階 (5)</option>
+            <option value="6">初中階 (6)</option>
+            <option value="7">初中階 (7)</option>
+            <option value="8">中階 (8)</option>
+            <option value="9">中階 (9)</option>
+            <option value="10">中進階 (10)</option>
+            <option value="11">中進階 (11)</option>
+            <option value="12">中進階 (12)</option>
+            <option value="13">高階 (13)</option>
+            <option value="14">高階 (14)</option>
+            <option value="15">高階 (15)</option>
+            <option value="16">職業級 (16)</option>
+            <option value="17">職業級 (17)</option>
+            <option value="18">職業級 (18)</option>
+          </select>
+        </label>
+        </div>
+        <div><label>價格: <input type="number" name="price"  min="1" max="999" /></label><label>會員價格: <input type="number" name="member_price" min="1" max="999"  /></label><label><input type="checkbox" name="ball_included" />含球</label></div>
+        <div><label>名額: <input type="number" name="max_number"   min="1" max="999" /></label></div>
+        <div><label>打分: <input type="number" name="points" min="1" max="50"  /></label></div>
+        <div><label><input type="checkbox" name="has_duece" /> 有Deuce</label></div>
+        <div><label><input type="checkbox" name="is_double" /> 雙打</label></div>
+        <div style="display: flex; align-items: flex-start; gap: 0.5rem; margin-bottom: 1rem;">
+            <label for="note" style="white-space: nowrap;">備註:</label>
+            <textarea name="note" id="note" rows="5" style="flex: 1; min-width: 300px;" maxlength="255"></textarea>
+        </div>
+        <div><label><input type="checkbox" name="is_perweek" /> 每週固定開團</label></div>
+        <div><label><input type="checkbox" name="skip_thisweek" /> 本週取消</label></div>
+        <div><label><input type="checkbox" name="skip_forever" /> 永久取消</label></div>
+        <div style="display: flex; align-items: flex-start; gap: 0.5rem; margin-bottom: 1rem;">
+            <label for="fix_members" style="white-space: nowrap;">固定成員:</label>
+            <textarea name="fix_members" id="fix_members" rows="5" style="flex: 1; min-width: 300px;"></textarea>
+        </div>
+        <div>
+            <button type="submit" class="button">Save</button>
+          <button type="button" class="button" style="background:#aaa" onclick="closeModal()">Cancel</button>
+        </div>
+      </form>
+  </div>
+</div>
+
+      <!-- Debug log area -->
+      <pre id="debugLog" style="background:#f9f9f9;border:1px solid #ccc;padding:10px;white-space:pre-wrap;"></pre>
+
+    
+<script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+<script>
+// Helper function for logging to both console and screen
+function log(msg) {
+  const el = document.getElementById('debugLog');
+  if (el) el.textContent += msg + '\n';
+  console.log(msg); // Fallback to console
+}
+
+function formatDate(date) {
+  const weekday = ['日','一','二','三','四','五','六'][date.getDay()];
+  return `${date.getFullYear()}/${date.getMonth() + 1}/${date.getDate()}(${weekday}) `;
+}
+
+
+  const calendarEl = document.getElementById('calendar');
+  const modal = document.getElementById('gameModal');
+  const form = document.getElementById('gameForm');
+  let editingGame = null;
+
+  function openCreateGameForm(game = null) {
+    document.getElementById('gameModal').style.display = 'flex';
+    document.getElementById('gameForm').style.display = 'block';
+    const form = document.getElementById('gameForm');
+
+    log(`openCreateGameForm ${game}`);
+    form.reset();
+
+    const input = document.getElementById('gameDate');
+    const today = new Date();
+    
+    const formatDate = (d) =>
+      d.toISOString().split('T')[0];
+
+    const minDate = new Date(today);
+    minDate.setDate(today.getDate());
+
+    const maxDate = new Date(today);
+    maxDate.setDate(today.getDate() + 6);
+
+    input.min = formatDate(minDate);
+    input.max = formatDate(maxDate);
+
+
+
+
+    const modalTitle = document.getElementById('modalTitle');
+    if (game.id == undefined){
+        modalTitle.innerText ='建立新暢打團';
+    }else{
+        modalTitle.innerText ='修改';       
+    }
+    
+    if (game) {
+        for (let key in game) {
+            const el = form.elements[key];
+            log(`key=${key} value=${game[key]}`);
+            if (el) {
+                if (el.type === 'checkbox') {
+                    el.checked = game[key];
+                } else if (el.type === 'date') {
+                    el.value = game[key].substring(0, 10);  // '2025-05-09'
+                } else {
+                    el.value = game[key];
+                }
+            }
+        }
+    }
+  }
+  
+  function closeModal() { modal.style.display = 'none'; editingGame = null; }
+
+  form.onsubmit = async (e) => {
+    e.preventDefault();
+    const formData = new FormData(form);
+    const game = Object.fromEntries(formData.entries());
+    game.ball_included = formData.get('ball_included') === 'on';
+    game.has_duece = formData.get('has_duece') === 'on';
+    game.is_double = formData.get('is_double') === 'on';
+    game.skip_thisweek  = formData.get('skip_thisweek') === 'on';
+    game.skip_forever  = formData.get('skip_forever') === 'on';
+    
+    game.create_line_group = groupId;
+    game.create_line_id = userId;
+    log(game.id);
+    const method = game.id ? 'PUT' : 'POST';
+    log(method);
+    await fetch(`/webhook/api/games${game.id ? '/' + game.id : ''}`, {
+      method,
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify(game)
+    });
+    closeModal();
+    loadGames(userId, groupId);
+  };
+
+
+  async function loadGames(userId, groupId) {
+    const res = await fetch(`/webhook/api/games?groupId=${groupId}`);
+
+    if (!res.ok) {
+    const errorText = await res.text();
+    console.error("Failed to load games:", errorText);
+    return;
+  }
+
+  const text = await res.text();
+  if (!text) {
+    console.warn("Empty response body");
+    return;
+  }
+    const games = JSON.parse(text); // Only do this after verifying it's valid JSON
+    renderCalendar(games);
+  }
+
+  async function goToWebhook_remove(el) {
+    const userId= el.dataset.userId;
+    const gameId = el.dataset.id;
+    const groupId = el.dataset.groupId;
+    if (!gameId) {
+      alert('Missing game ID or nickname!');
+      return;
+    }
+  
+    log(`Delete game ${gameId} `);
+    response = await fetch(`/webhook/api/remove_game/${gameId}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' }
+    });
+
+    loadGames(userId, groupId);
+  }
+
+  function goToWebhook(el) {
+    const id = el.dataset.id;
+    const groupId = el.dataset.group;
+    const url = `https://www.lifevocloud.com/webhook?gameId=${id}&groupId=${groupId}`;
+    window.location.href = url;
+  }
+
+
+  function renderCalendar(games) {
+    const gameMap = new Map();
+
+    games.forEach(g => {
+        const dateStr = new Date(g.date).toISOString().split('T')[0];
+        const hour = +g.start_hour;
+
+        if (!gameMap.has(dateStr)) {
+            gameMap.set(dateStr, new Map());
+        }
+
+        gameMap.get(dateStr).set(hour, g);
+    });
+    
+    const now = new Date();
+    calendarEl.innerHTML = '';
+    for (let i = 0; i < 7; i++) {
+      const date = new Date(now);
+      let period_hours = 0;
+      date.setDate(now.getDate() + i);
+      const dateStr = date.toISOString().split('T')[0]; // For comparison
+      const displayDate = formatDate(date); // For showing in HTML
+      const card = document.createElement('div');
+      card.className = 'day-card';
+      card.innerHTML = `<h3>${displayDate}</h3>`;
+      console.log(`dateStr=${dateStr} `);
+      for (let h = 6; h <= 24; h++) {
+        const game = gameMap.get(dateStr)?.get(h);
+        if (game) {
+            const duration = game.end_hour - game.start_hour;
+            const block = document.createElement('div');
+            block.className = 'slot occupied';
+            block.style.gridRow = `span ${duration}`;
+            log(JSON.stringify(game));
+            if (game.expired) {
+                block.innerHTML = `${h}:00 
+                <div class="game-info">
+                    <span class="game-link" onclick='openCreateGameForm(${JSON.stringify(game)})'>${game.name}</span>
+                    <button class="flat-button" data-id="${game.id}" data-groupId="${game.create_line_group}" data-userId="${game.create_line_id}" onclick="goToWebhook_remove(this)">刪除</button>
+                </div>
+                `;
+            }else{
+            block.innerHTML = `${h}:00 
+                <div class="game-info">
+                    <span class="game-link" onclick='openCreateGameForm(${JSON.stringify(game)})'>${game.name}</span>
+                    <button class="flat-button" data-id="${game.id}" data-group="${game.create_line_group}" onclick="goToWebhook(this)">報名</button>
+                    <button class="flat-button" data-id="${game.id}" data-groupId="${game.create_line_group}" data-userId="${game.create_line_id}" onclick="goToWebhook_remove(this)">刪除</button>
+                </div>
+                `;
+            }
+            card.appendChild(block);
+
+            h += duration - 1; // skip next hours
+            continue;
+        } else {
+            // Render selectable empty slot
+            const slot = document.createElement('div');
+            slot.className = 'slot selectable';
+            slot.textContent = `${h}:00`;
+            slot.onclick = () => {
+                openCreateGameForm({
+                    date: dateStr,        // e.g. "2025-05-09"
+                    start_hour: h,         // e.g. 14
+                    end_hour: h+1,
+                    leader_name:window.userName,
+                    is_doulbe:true,
+                    max_number:8,
+                    points:25,
+                    low_level:3,
+                    high_level:8,
+                    price:250,
+                    member_price:250,
+                    ball_included: true,
+                    has_duece: false,
+                    is_perweek: true,
+                    skip_thisweek: false,
+                    skip_forever: false,
+                    create_line_id:window.userId,
+                    create_line_group:window.groupId
+                });
+            };
+            card.appendChild(slot);
+        }
+      }
+
+      calendarEl.appendChild(card);
+    }
+  }
+  async function main() {
+      try {
+        await liff.init({ liffId: "1657304004-NPlZynwM" });
+
+        if (!liff.isLoggedIn()) {
+            log('Not logged in. Redirecting...');
+            const currentUrl = window.location.href;
+            liff.login({ redirectUri: currentUrl });
+            return;
+        }
+
+        log('Logged in.');
+
+        const profile = await liff.getProfile();
+        const context = liff.getContext();
+
+        const userId = context.userId || profile.userId;
+        let groupId = null;//context.groupId || '';
+        
+        log(groupId);
+        const stateParam = liff.getContext()?.state;
+        console.log('liff.state: ' + stateParam);
+        log('liff.state: ' + stateParam);
+        if (stateParam) {
+            // LIFF context state (used when launched via liff:// URL with state)
+            const params = new URLSearchParams(stateParam);
+            log(params);
+            groupId = params.get("groupId");	  
+            console.log('Parsed gameId from liff.state: groupid='+ groupId);
+            log('Parsed gameId from liff.state: groupid='+ groupId);
+        }
+
+        if (!groupId) {
+            const searchParams = new URLSearchParams(window.location.search);
+            groupId = searchParams.get("groupId");
+
+            // Fallback if 'groupId' is embedded in a liff.state string
+            const rawState = searchParams.get("liff.state");
+            if (!groupId && rawState) {
+                const fallbackParams = new URLSearchParams(rawState);
+                groupId = fallbackParams.get("groupId");
+            }
+
+            log("Final resolved groupId from URL or fallback: " + groupId);
+        }
+
+       
+        log(groupId);
+        //document.getElementById('userName').innerText = profile.displayName;
+        window.userName = profile.displayName;
+        window.groupId = groupId;
+        window.userId = userId;
+        log(`main() userId=${userId} groupId=${groupId}`);
+        // Show main UI
+       ///document.getElementById('loading').style.display = 'none';
+        //document.getElementById('main').style.display = 'block';
+        log(`userId=${userId} group_id=${groupId}`);
+        log(groupId);
+        // Load and render games based on userId and groupId here...
+        loadGames(userId, groupId);
+
+      } catch (err) {
+        console.error('LIFF init failed', err);
+        document.getElementById('loading').textContent = 'LIFF initialization failed.';
+      }
+    }
+
+
+    main();
+</script>
+
+</body>
+</html>

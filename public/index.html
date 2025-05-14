@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>暢打資訊</title>
+  <link href="https://fonts.googleapis.com/css2?family=Segoe+UI&display=swap" rel="stylesheet">
+<style>
+  body {
+    font-family: 'Baloo 2', sans-serif;
+    background-color: #3cc0c3;
+    color: white;
+    margin: 0;
+    padding: 20px;
+    color: #333;
+  }
+
+  label {
+    font-size: 0.75rem; /* or use px like 12px */
+  }
+
+  #content {
+    max-width: 400px;
+    margin: auto;
+    padding: 20px;
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  }
+
+  h2#gameTitle,#gameName,#gamePrice,#gameLevel,#gameDetail,#gameMemo {
+    font-size: 1.0rem;
+    margin-bottom: 10px;
+    color: #2c3e50;
+    text-align: left;
+  }
+
+  .player-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px 10px; /* row-gap and column-gap */
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.player-grid li {
+  background: #e9f5ec;
+  height: 24px;
+  line-height: 24px;
+  padding: 0 0px;
+  font-size: 0.75rem;
+  border-radius: 6px;
+  border: 1px solid #cce3d8;
+  color: #2f4f4f;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.player-grid li.regular {
+  background: #e9f5ec; /* 淡綠 */
+  border: 1px solid #cce3d8;
+}
+
+.player-grid li.standby {
+  background: #fff3cd; /* 淡黃 */
+  border: 1px solid #ffeeba;
+}
+.player-grid li.empty {
+  background: hwb(0 100% 0%); /* 淡黃 */
+  border: 1px solid #ffeeba;
+}
+
+.input-row {
+  display: flex;
+  align-items: center;
+  gap: 5px; /* space between input groups */
+  margin-bottom: 10px;
+  flex-wrap: wrap; /* allow wrapping on small screens */
+}
+
+.input-group {
+  display: flex;
+  align-items: center;
+  gap: 3px; /* space between label and input */
+}
+
+.input-group label {
+  font-size: 0.85rem;
+  white-space: nowrap;
+}
+
+.input-group input,
+.input-group select {
+  height: 36px;
+  padding:3px 5px;
+  font-size: 0.9rem;
+  border: 1px solid #ccc;
+  border-radius: 10px;
+  box-sizing: border-box;
+}
+
+  button {
+    width: 48%;
+    padding: 10px;
+    margin: 1%;
+    border: none;
+    border-radius: 10px;
+    font-size: 0.8rem;
+    cursor: pointer;
+    background-color: #5dae7f;
+    color: white;
+    transition: background-color 0.3s ease;
+  }
+
+  button:hover {
+    background-color: #04a145;
+  }
+
+  #debugLog {
+    font-size: 0.85rem;
+    margin-top: 20px;
+    max-height: 150px;
+    overflow-y: auto;
+    background: #f0f0f0;
+    border-radius: 10px;
+  }
+  
+  .button-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+  }
+
+  .button-row button {
+   flex: 1;
+  }
+ 
+  #player-title {
+  color:  #2f4f4f;         /* 深綠灰色，搭配你之前的字色 */
+  font-size: 0.9rem;     /* 稍大字體 */
+  margin-bottom: 8px;     /* 與下方元素保持間距 */
+  font-weight: 600;       /* 微粗體 */
+}
+
+  #playerListTitle {
+  font-size: 0.8rem;
+  margin-bottom: 10px;
+  color: #2c3e50;
+  text-align: left;
+}
+</style>
+</head>
+<body>
+  <div id="content">
+    <h2 id="gameName" color: #007BFF; >Loading game...</h2>
+    <h2 id="gameTitle">Loading game...</h2>
+    <h2 id="gameDetail">Loading game...</h2>
+    <div id="gameMemo"></div>
+<div  id="inputs" class="input-row">
+  <div class="input-group">
+    <label for="nickname">你的暱稱</label><input type="text" id="nickname" placeholder="Your name">
+  </div>
+  <div class="input-group">
+    <label for="number">人數</label><select id="number">
+      <option value="1">1</option>
+      <option value="2">2</option>
+      <option value="3">3</option>
+      <option value="4">4</option>
+      <option value="5">5</option>
+      <option value="6">6</option>
+      <option value="7">7</option>
+      <option value="8">8</option>
+      <option value="9">9</option>      
+      <!-- ... -->
+    </select>
+  </div>
+</div>
+    <div class="button-row">
+      <button id="joinBtn" onClick = "joinLeaveGame(true)" >報名</button>
+      <button id="leaveBtn" onClick = "joinLeaveGame(false)" >取消報名</button>
+    </div>
+    <h3 id="player-title">已報名名單</h3>
+    <div id="playerColumns" class="player-grid">
+      <ul id="leftPlayers"></ul>
+      <ul id="rightPlayers"></ul>
+    </div>
+
+    <!-- Debug log area -->
+    <pre id="debugLog" style="background:#f9f9f9;border:1px solid #ccc;padding:10px;white-space:pre-wrap;"></pre>
+  </div>
+
+  <!-- LIFF SDK -->
+  <script src="https://static.line-scdn.net/liff/edge/2.1/sdk.js"></script>
+
+  <!-- LIFF init and app logic -->
+  <script>
+    async function joinLeaveGame(join) {
+  const nickname = document.getElementById('nickname').value;
+  const number = document.getElementById('number').value;
+  const gameId = window.gameId; // use the global one
+  const lineUserId = window.lineUserId;
+  const user = window.user;
+  const groupId = window.groupId;
+  let response = null;
+  if (!gameId || !nickname) {
+    alert('Missing game ID or nickname!');
+    return;
+  }
+  
+  if (join == true){
+    log(`Joining game ${gameId} as ${nickname} with number ${number} groupId=${groupId} user=${user} userId=${lineUserId}`);
+    response = await fetch(`/webhook/api/join/${gameId}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ nickName: nickname, count:parseInt(document.getElementById('number').value, 10), userName:user, userId: lineUserId, groupId: groupId })
+    });
+
+    //alert('Joined!');
+  }else{
+    log(`Leave game ${gameId} as ${nickname} with number ${number} groupId=${groupId} user=${user} ${lineUserId}`);
+    response =  await fetch(`/webhook/api/leave/${gameId}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ nickName: nickname, count:parseInt(document.getElementById('number').value, 10), userName:user, userId: lineUserId, groupId: groupId })
+    });
+    //alert('Leave!');
+  }
+
+// Parse the response body as JSON
+const data = await response.json();
+
+  log('Server says:', data.message);
+
+  if (response.success) {
+    alert('Success: ' + data.message);
+  } else {
+    alert('Failed: ' + data.message);
+  }
+
+  fetchGameInfo(gameId);
+}
+
+    // Helper to get cookie
+  function getCookie(name) {
+    const match = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'));
+    return match ? match[2] : null;
+  }
+  window.myApp = {
+          liffUser: null,
+          user: "",
+          lineUserId: "",
+          groupId: "",
+          gameId: ""
+        };
+  window.onload = async () => {
+    log('Starting LIFF init...');
+
+    try {
+      await liff.init({ liffId: "1657304004-NPlZynwM" });
+      log('LIFF initialized.');
+
+      if (!liff.isLoggedIn()) {
+        log('Not logged in. Redirecting...');
+        const currentUrl = window.location.href;
+        liff.login({ redirectUri: currentUrl });
+        return;
+      }
+
+      log('Logged in.');
+
+      const stateParam = liff.getContext()?.state;
+      log('liff.state: ' + stateParam);
+      setGameIdAndFetch(stateParam);
+
+      const profile = await liff.getProfile();
+      window.liffUser = profile;
+      log('LIFF profile loaded: ' + profile.displayName);
+      document.getElementById('nickname').value = profile.displayName;
+      // Set cookie
+      window.user = profile.displayName;
+      window.lineUserId = profile.userId;
+      document.cookie = `lineUserId=${window.lineUserId}; path=/`;
+      document.cookie = `user=${window.user}; path=/`;
+
+
+      log('profile.displayName: ' + profile.displayName);
+      log('user: ' + window.user);
+      log('lineUserId: ' + window.lineUserId);
+
+
+    } catch (err) {
+      log('Error during LIFF init or profile fetch: ' + err.message);
+    }
+  };
+  </script>
+
+  <!-- App logic -->
+  <script src="/webhook/js/index.js?v=1.0.3"></script>
+</body>
+</html>

@@ -1,0 +1,8 @@
+{
+  "dependencies": {
+    "@line/bot-sdk": "^9.9.0",
+    "dayjs": "^1.11.13",
+    "express": "^5.1.0",
+    "pg": "^8.15.6"
+  }
+}
