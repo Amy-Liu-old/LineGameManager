@@ -169,14 +169,14 @@ const getGamesByGroupId = async (groupId) => {
     g.fix_members,
     g.skip_thisweek,
     g.skip_forever,
-    (g.date + (g.start_hour || ' hours')::interval)::timestamptz AS game_start_utc,
+   (g.date + (g.start_hour || ' hours')::interval)::timestamptz AS game_start_utc,
     (now() AT TIME ZONE 'Asia/Taipei') AS current_taipei_time,
     (now() AT TIME ZONE 'Asia/Taipei') > (g.date + (g.start_hour || ' hours')::interval)::timestamptz AS expired
-    FROM games g
-    WHERE g.create_line_group = $1
+     FROM games g
+    WHERE g.create_line_group = $1 and (now() AT TIME ZONE 'Asia/Taipei').date <= g.date
     ORDER BY g.date, g.start_hour
   `,[groupId]);
-
+   console.log(res.rows);
   return res.rows;
 } finally {
   client.release();
@@ -219,8 +219,9 @@ const getGames = async (group_id, month, day, start_h, end_h) => {
         g.skip_thisweek,
         g.skip_forever,
         (g.date + (g.start_hour || ' hours')::interval)::timestamptz AS game_start_utc,
-       (now() AT TIME ZONE 'Asia/Taipei') AS current_taipei_time,
-	      COUNT(p.id) AS player_count
+        (now() ) AS current_taipei_time,
+         COUNT(p.id) AS player_count,
+        (now() ) > (g.date + (g.start_hour || ' hours')::interval)::timestamptz AS expired
         FROM games g
         LEFT JOIN players p ON g.id = p.game_id
         WHERE g.date = $1 and g.start_hour = $2 and g.end_hour = $3 and g.create_line_group = $4 AND (g.date + make_interval(hours => g.start_hour)) > (now() AT TIME ZONE 'Asia/Taipei') AND g.skip_thisweek = FALSE AND g.skip_forever = FALSE
@@ -257,9 +258,10 @@ const getGames = async (group_id, month, day, start_h, end_h) => {
         g.fix_members,
         g.skip_thisweek,
         g.skip_forever,
-         (g.date + (g.start_hour || ' hours')::interval)::timestamptz AS game_start_utc,
-       (now() AT TIME ZONE 'Asia/Taipei') AS current_taipei_time,
-	      COUNT(p.id) AS player_count
+        (g.date + (g.start_hour || ' hours')::interval)::timestamptz AS game_start_utc,
+        (now() AT TIME ZONE 'Asia/Taipei') AS current_taipei_time,
+        COUNT(p.id) AS player_count,
+        (now() AT TIME ZONE 'Asia/Taipei') > (g.date + (g.start_hour || ' hours')::interval)::timestamptz AS expired
         FROM games g
         LEFT JOIN players p ON g.id = p.game_id
         WHERE g.date = $1 and g.create_line_group = $2 AND (g.date + make_interval(hours => g.start_hour)) > (now() AT TIME ZONE 'Asia/Taipei') AND g.skip_thisweek = FALSE AND g.skip_forever = FALSE
@@ -297,8 +299,9 @@ const getGames = async (group_id, month, day, start_h, end_h) => {
         g.skip_thisweek,
         g.skip_forever,
         (g.date + (g.start_hour || ' hours')::interval)::timestamptz AS game_start_utc,
-       (now() AT TIME ZONE 'Asia/Taipei') AS current_taipei_time,
-        COUNT(p.id) AS player_count
+        (now() AT TIME ZONE 'Asia/Taipei') AS current_taipei_time,
+        COUNT(p.id) AS player_count,
+        (now() AT TIME ZONE 'Asia/Taipei') > (g.date + (g.start_hour || ' hours')::interval)::timestamptz AS expired
         FROM games g
         LEFT JOIN players p ON g.id = p.game_id
         WHERE g.create_line_group = $1 
@@ -354,10 +357,10 @@ async function getGameWithPlayers(gameId) {
         g.points,
         g.note,
         g.is_perweek,
-    (g.date + (g.start_hour || ' hours')::interval)::timestamptz AS game_start_utc,
-    (now() AT TIME ZONE 'Asia/Taipei') AS current_taipei_time,
-    (now() AT TIME ZONE 'Asia/Taipei') > (g.date + (g.start_hour || ' hours')::interval)::timestamptz AS expired
-    FROM games g WHERE id = $1 `, [gameId]);
+        (g.date + (g.start_hour || ' hours')::interval)::timestamptz AS game_start_utc,
+        (now() AT TIME ZONE 'Asia/Taipei') AS current_taipei_time,
+        (now() AT TIME ZONE 'Asia/Taipei') > (g.date + (g.start_hour || ' hours')::interval)::timestamptz AS expired
+       FROM games g WHERE id = $1 `, [gameId]);
     const playerResult = await client.query('SELECT * FROM players WHERE game_id = $1  ORDER BY id',[gameId]);
 
     console.log(gameResult.rows);
@@ -445,12 +448,13 @@ async function joinGame(gameId, userName, lineNickName, lineUserId, count) {
  
     console.log("joinGame 179: userName=",userName);  
     for (let i = 0; i < count; i++) {
-      let newIndex = i + matchedPlayers.length;
-      if (newIndex+1 == 1){
+      let newIndex = i + matchedPlayers.length+1;
+      let allIndex = i + existingPlayerCount+ 1
+      if (newIndex== 1){
         usedUserName = userName ;
       }
       else{
-      usedUserName = userName + "   --" +(newIndex + 1).toString();
+      usedUserName = userName + "   --" +(newIndex).toString();
       }
       console.log("joinGame 187: usedUserName=",usedUserName);  
 
@@ -460,9 +464,9 @@ async function joinGame(gameId, userName, lineNickName, lineUserId, count) {
       );
 
       if (existingPlayerCount + i + 1 <= game.max_number) {
-        okList.push(usedUserName);
+        okList.push(`${allIndex}. ${usedUserName}`);
       } else {
-        standbyList.push(usedUserName);
+        standbyList.push(`${allIndex-game.max_number}. ${usedUserName}`);
       }
     }
 
@@ -512,7 +516,7 @@ async function leaveGame(gameId, userName, lineNickName, count) {
         count--;
         console.log("i=",i," game.max_number=",game.max_number);
         if (i < game.max_number) {
-          okList.push(player.name);
+          okList.push(`${i+1}. ${player.name}`);
 
           console.log("playerResult.rows.length=",players.length," game.max_number=",game.max_number);
           // Promote someone from standby if needed
@@ -530,7 +534,7 @@ async function leaveGame(gameId, userName, lineNickName, count) {
             console.log(upList.length);
           }
         } else {
-          standbyList.push(player.name);
+          standbyList.push(`${i+1-game.max_number}. ${player.name}`);
         }
       }  
     }

@@ -107,6 +107,55 @@ async function createGame(event, res, client, groupId, userId, nickName){
     res.sendStatus(200);
 }
 
+async function viewGame(event, res, client, groupId, userId, nickName){
+
+  flexMessage = {
+
+    type: 'flex',
+    altText: '開團',
+    contents: {
+      type: 'carousel',
+      contents: [{
+        type: 'bubble',
+          hero: {
+            type: 'image',
+            url: 'https://www.lifevocloud.com/webhook/assets/createGame.png',
+            size: 'full',
+            aspectRatio: '10:5',
+            aspectMode: 'cover',
+            backgroundColor: '#AFEA37'
+        },
+        body: {
+          type: 'box',
+          layout: 'vertical',
+          contents: [
+            { type: 'text', text: `點選下方連結開團`, weight: 'bold', size: 'md' },
+          ],
+        },
+        footer: {
+          type: 'box',
+          layout: 'horizontal',
+          contents: [
+            {
+              type: 'button',
+              style: 'primary',
+              action: {
+                      type: 'uri',
+                      label: '開團',
+                      uri: `https://liff.line.me/1657304004-NPlZynwM?create=2&groupId=${groupId}`
+              },
+            },
+          ],
+        },
+      }],
+    },
+  };
+
+await client.replyMessage(event.replyToken, flexMessage);
+res.sendStatus(200);
+}
+
+
 
 const levelMap = {
   1: "新手階",
@@ -170,7 +219,7 @@ app.post('/webhook', line.middleware(config), async (req, res) => {
       if (parseResult){	
         const userName = (!parseResult.name || parseResult.name.trim() === "") ? nickName : parseResult.name.trim();
         let games = await getGames(groupId, parseResult.month, parseResult.day, parseResult.start_h, parseResult.end_h);
-        console.log("Line 76:userName=",userName," nickName=", nickName);     
+        console.log("Line 173:userName=",userName," nickName=", nickName,"groupId=", groupId);     
         console.log(parseResult);
         // Prepare a Flex Message or a Carousel based on DB
         //const players = await getPlayers();
@@ -205,14 +254,17 @@ app.post('/webhook', line.middleware(config), async (req, res) => {
               //flexMessage.text += `\n${userName}報名${parseResult.count}人`;
               if (okList.length > 0)
               {
-                flexMessage.text += `\n報名成功：${okList}`;
+                flexMessage.text += `\n報名成功：`;
+                for (const ok of okList) {
+                  flexMessage.text += `\n  ${ok}`;
+                }
               }
               if (standbyList.length > 0)
               {
-                flexMessage.text += `\n候補： ${standbyList}`;
-              }
-              if ( parseResult.count > 1){
-                flexMessage.text += `共${parseResult.count}人`;
+                flexMessage.text += `\n候補成功：`;
+                for (const standby of standbyList) {
+                  flexMessage.text += `\n  候補${standby}`;
+                }
               }
             } else {
               console.log("Join failed, code:", code);
@@ -224,13 +276,15 @@ app.post('/webhook', line.middleware(config), async (req, res) => {
 
               }
             }
+            /*
             if (new_number == game.max_number){
-              flexMessage.text += `\n\n該團目前報名:${game.max_number}`;
+              flexMessage.text += `\n\n該團目前已報名:${game.max_number}`;
             }else if (new_number > game.max_number){
-              flexMessage.text += `\n\n該團目前報名:${game.max_number}, 後補:${new_number -game.max_number}`;
+              flexMessage.text += `\n\n該團目前已報名:${game.max_number}, 後補:${new_number -game.max_number}`;
             }else {
-              flexMessage.text += `\n\n該團目前報名:${new_number}`;
+              flexMessage.text += `\n\n該團目前已報名:${new_number}`;
             }
+             */ 
           }
           else if (parseResult.pattern_id == 3)
           {
@@ -241,16 +295,18 @@ app.post('/webhook', line.middleware(config), async (req, res) => {
               console.log("Leave success:", { okList, standbyList, upList });
               flexMessage.text = `${game.name} \n${formatGameTitle(game)}`;// 目前報名:${new_number}/${game.max_number}`;
               //flexMessage.text += `\n${userName}已取消報名${parseResult.count}人`;
+              flexMessage.text += `\n取消成功：`;
               if (okList.length > 0)
               {
-                flexMessage.text += `\n取消報名：${okList}`;
+                for (const ok of okList.slice().reverse()) {
+                  flexMessage.text += `\n  ${ok}`;
+                }
               }
               if (standbyList.length > 0)
               {
-                flexMessage.text += `\n取消候補： ${standbyList}`;
-              }
-              if ( parseResult.count > 1){
-                flexMessage.text += `共${parseResult.count}人`;
+                for (const standby of standbyList.slice().reverse()) {
+                  flexMessage.text += `\n  候補${standby}`;
+                }
               }
               
               sortUpList = upList;
@@ -271,13 +327,15 @@ app.post('/webhook', line.middleware(config), async (req, res) => {
               }else if (code == -3){
               }
             }
+            /*
             if (new_number == game.max_number){
-              flexMessage.text += `\n\n該團目前報名:${game.max_number}`;
+              flexMessage.text += `\n\n該團目前已報名:${game.max_number}`;
             }else if (new_number > game.max_number){
-              flexMessage.text += `\n\n該團目前報名:${game.max_number}, 後補:${new_number -game.max_number}`;
+              flexMessage.text += `\n\n該團目前已報名:${game.max_number}, 後補:${new_number -game.max_number}`;
             }else {
-              flexMessage.text += `\n\n該團目前報名:${new_number}`;
+              flexMessage.text += `\n\n該團目前已報名:${new_number}`;
             }
+            */
           }
 
           flexMessage.text += '\n查詢詳細報名狀況請輸入 ??';
@@ -335,6 +393,7 @@ app.post('/webhook', line.middleware(config), async (req, res) => {
         }
         if (parseResult.pattern_id == 2 || parseResult.pattern_id == 3)
         {
+          /*
           flexMessage = {
             type: 'text',
             text: '',
@@ -346,8 +405,14 @@ app.post('/webhook', line.middleware(config), async (req, res) => {
           await client.replyMessage(event.replyToken, replyMessages);
           res.sendStatus(200);
           return;
+          */
+          viewGame(event, res, client, groupId, userId, nickName);
+          return;
         }
     
+
+
+
         const bubbles = await Promise.all (games.map(async game => {
         console.log("gameid="+game.id);	
         const players = await getPlayersOfGame(game.id);
@@ -540,16 +605,11 @@ app.post('/webhook/api/games', async (req, res) => {
       res.status(201).json(newGame);
       console.log(newGame);
       // Create fix memebers for this game
-      const names = fix_members.trim().split(/\s+/);  // Split by any whitespace
-
-      names.forEach(userName => {
-        const gameId = newGame.id;             // Replace with actual game ID
-        const lineNickName = userName; // Or your desired nickname
-        const lineUserId = create_line_id;   // Replace with actual ID
-        const count = 1;               // Or however many slots each one uses
-        
-        joinGame(gameId, userName, lineNickName, lineUserId, count);
-      });
+      const names = fix_members.trim().split(/\s+/).filter(Boolean);
+      for (const userName of names) {
+        await joinGame(gameId, userName, userName, create_line_id, count);
+        console.log(`joinGame - ${userName}`);
+      }
     }
 
 });
@@ -599,8 +659,13 @@ app.get('/webhook/', (req, res) => {
 
     if (create)
       {  
+        if (create ==1 ){
         console.log("game_scheduler.html");
         res.sendFile(path.join(__dirname, 'public', 'game_scheduler.html'));
+        }else if (create ==2){
+          console.log("game_list.html");
+          res.sendFile(path.join(__dirname, 'public', 'game_list.html'));         
+        }
       }else{
         console.log("index.html");
         res.sendFile(path.join(__dirname, 'public', 'index.html'));    
@@ -608,8 +673,13 @@ app.get('/webhook/', (req, res) => {
   }else{
     if (create)
       {  
-        console.log("game_scheduler.html");
-        res.sendFile(path.join(__dirname, 'public', 'game_scheduler.html'));
+        if (create ==1) {
+          console.log("game_scheduler.html");
+          res.sendFile(path.join(__dirname, 'public', 'game_scheduler.html'));
+          }else if (create ==2){
+            console.log("game_list.html");
+            res.sendFile(path.join(__dirname, 'public', 'game_list.html'));         
+          }
       }else{
         console.log("index.html");
         res.sendFile(path.join(__dirname, 'public', 'index.html'));    
@@ -682,27 +752,34 @@ async function joinLeaveGame(res, join, game, nickName, userName, userId, count,
       new_number = playerCount + count;
       flexMessage.text = `${game.name} \n${formatGameTitle(game)}`;
       if (okList.length > 0)
-      {
-        flexMessage.text += `\n-報名成功：${okList}`;
-      }
-      if (standbyList.length > 0)
-      {
-        flexMessage.text += `\n-候補： ${standbyList}`;
-      }
-      if ( count > 1){
+        {
+          flexMessage.text += `\n報名成功：`;
+          for (const ok of okList) {
+            flexMessage.text += `\n  ${ok}`;
+          }
+        }
+        if (standbyList.length > 0)
+        {
+          flexMessage.text += `\n候補成功：`;
+          for (const standby of standbyList) {
+            flexMessage.text += `\n  候補${standby}`;
+          }
+        }
+      /*if ( count > 1){
         flexMessage.text += `\n共${count}人`;
-      }
+      }*/
+      /*
       if (new_number == game.max_number){
         flexMessage.text += `\n\n該團目前報名:${game.max_number}`;
       }else if (new_number > game.max_number){
         flexMessage.text += `\n\n該團目前報名:${game.max_number}, 後補:${new_number -game.max_number}`;
       }else {
         flexMessage.text += `\n\n該團目前報名:${new_number}`;
-      }
+      }*/
     } else {
       console.log("Join failed, code:", code);
       if (code == -1){
-        flexMessage.text = `查無場次！`;
+        flexMessage.text = `查無場次或已過報名時間！`;
       }else if (code == -2){
         flexMessage.text = `${userName}報名人數已超過候補上限,請調整人數！`;
       }else if (code == -3){
@@ -717,14 +794,20 @@ async function joinLeaveGame(res, join, game, nickName, userName, userId, count,
       console.log("Leave success:", { okList, standbyList, upList });
       flexMessage.text = `${game.name} \n${formatGameTitle(game)}`;
 
+      flexMessage.text += `\n取消成功：`;
       if (okList.length > 0)
       {
-        flexMessage.text += `\n取消報名：${okList}`;
+        for (const ok of okList.slice().reverse()) {
+          flexMessage.text += `\n  ${ok}`;
+        }
       }
       if (standbyList.length > 0)
       {
-        flexMessage.text += `\n取消候補： ${standbyList}`;
+        for (const standby  of standbyList.slice().reverse()) {
+          flexMessage.text += `\n  候補${standby}`;
+        }
       }
+      /*
       if ( count > 1){
         flexMessage.text += `\n共取消${count}人`;
       }
@@ -735,6 +818,7 @@ async function joinLeaveGame(res, join, game, nickName, userName, userId, count,
       }else {
         flexMessage.text += `\n\n該團目前報名:${new_number}`;
       }
+        */
       
       console.log("flexMessage.text=", flexMessage.text);
       sortUpList = upList;
@@ -758,7 +842,7 @@ async function joinLeaveGame(res, join, game, nickName, userName, userId, count,
     }
   }
   
-  flexMessage.text += '\n查詢詳細報名狀況請輸入??';
+  //flexMessage.text += '\n查詢詳細報名狀況請輸入??';
 
   if ( result  < 0)
   {  

@@ -426,50 +426,69 @@ function formatDate(date) {
   }
 
 
+const levelMap = {
+  1: "新手階",
+  2: "新手階",
+  3: "新手階",
+  4: "初階",
+  5: "初階",
+  6: "初中階",
+  7: "初中階",
+  8: "中階",
+  9: "中階",
+  10: "中進階",
+  11: "中進階",
+  12: "中進階",
+  13: "高階",
+  14: "高階",
+  15: "高階",
+  16: "職業級",
+  17: "職業級",
+  18: "職業級"
+};
+
+
+  function formatGameＬevel(low, high) {
+  const lowText = levelMap[low];
+  const highText = levelMap[high];
+
+  if (lowText && highText) {
+    return low === high ? lowText : `${lowText} ~ ${highText}`;
+  } else if (lowText) {
+    return lowText;
+  } else if (highText) {
+    return highText;
+  } else {
+    return "不限"; // or "未知程度"
+  }
+}
   function renderCalendar(games) {
-    const gameMap = new Map();
-
-    games.forEach(g => {
-        const dateStr = new Date(g.date).toISOString().split('T')[0];
-        const hour = +g.start_hour;
-
-        if (!gameMap.has(dateStr)) {
-            gameMap.set(dateStr, new Map());
-        }
-
-        gameMap.get(dateStr).set(hour, g);
-    });
-    
-    const now = new Date();
     calendarEl.innerHTML = '';
-    for (let i = 0; i < 7; i++) {
-      const date = new Date(now);
-      let period_hours = 0;
-      date.setDate(now.getDate() + i);
-      const dateStr = date.toISOString().split('T')[0]; // For comparison
-      const displayDate = formatDate(date); // For showing in HTML
+    const card = document.createElement('div');
+    games.forEach(game => {
+      log("GAME=")
+      log(game);
+      const date = new Date(game.date);
+      const weekday = ['日','一','二','三','四','五','六'][date.getDay()];
+      const title = `${date.getFullYear()}/${date.getMonth() + 1}/${date.getDate()}(${weekday})  ${game.start_hour}:00-${game.end_hour}:00   ${formatGameＬevel(game.low_level, game.high_level)}`;
+    
       const card = document.createElement('div');
       card.className = 'day-card';
-      card.innerHTML = `<h3>${displayDate}</h3>`;
-      console.log(`dateStr=${dateStr} `);
-      for (let h = 6; h <= 24; h++) {
-        const game = gameMap.get(dateStr)?.get(h);
-        if (game) {
-            const duration = game.end_hour - game.start_hour;
-            const block = document.createElement('div');
-            block.className = 'slot occupied';
-            block.style.gridRow = `span ${duration}`;
+      card.innerHTML = `<h3>${title}</h3>`;
+
+           const block = document.createElement('div');
+            block.className = 'slot';
             log(JSON.stringify(game));
             log(`data-groupId=${game.create_line_group} data-userId=${game.create_line_id}`);
             if (game.expired) {
-                block.innerHTML = `${h}:00 
+                block.innerHTML = `
                 <div class="game-info">
                     <span class="game-link" onclick='openCreateGameForm(${JSON.stringify(game)})'>${game.name}</span>
                     <button class="flat-button" data-id="${game.id}" data-group-id="${game.create_line_group}" data-user-id="${game.create_line_id}" onclick="goToWebhook_remove(this)">刪除</button>
                 </div>
                 `;
             }else{
-            block.innerHTML = `${h}:00 
+            block.innerHTML = `
                 <div class="game-info">
                     <span class="game-link" onclick='openCreateGameForm(${JSON.stringify(game)})'>${game.name}</span>
                     <button class="flat-button" data-id="${game.id}" data-group="${game.create_line_group}" onclick="goToWebhook(this)">報名</button>
@@ -478,42 +497,9 @@ function formatDate(date) {
                 `;
             }
             card.appendChild(block);
+            calendarEl.appendChild(card);
+    });
 
-            h += duration - 1; // skip next hours
-            continue;
-        } else {
-            // Render selectable empty slot
-            const slot = document.createElement('div');
-            slot.className = 'slot selectable';
-            slot.textContent = `${h}:00`;
-            slot.onclick = () => {
-                openCreateGameForm({
-                    date: dateStr,        // e.g. "2025-05-09"
-                    start_hour: h,         // e.g. 14
-                    end_hour: h+1,
-                    leader_name:window.userName,
-                    is_doulbe:true,
-                    max_number:8,
-                    points:25,
-                    low_level:3,
-                    high_level:8,
-                    price:250,
-                    member_price:250,
-                    ball_included: true,
-                    has_duece: false,
-                    is_perweek: true,
-                    skip_thisweek: false,
-                    skip_forever: false,
-                    create_line_id:window.userId,
-                    create_line_group:window.groupId
-                });
-            };
-            card.appendChild(slot);
-        }
-      }
-
-      calendarEl.appendChild(card);
-    }
   }
   async function main() {
       try {
