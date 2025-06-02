@@ -9,20 +9,8 @@ function normalizeAndCheck(input) {
   const patterns = [
     {
       pattern_id: 1,
-      description: '?@MM/DD, H-H',
-      regex: /^\+-@(\d{1,2})\/(\d{1,2}),(\d{1,2})-(\d{1,2})$/,
-      extract: ([, mm, dd, h1, h2]) => ({ name: null, count: null, month: mm, day: dd, start_h: h1, end_h: h2 })
-    },
-    {
-      pattern_id: 1,
-      description: '?@MM/DD',
-      regex: /^\+-@(\d{1,2})\/(\d{1,2})$/,
-      extract: ([, mm, dd]) => ({ name: null, count: null, month: mm, day: dd, start_h: null, end_h: null })
-    },
-    {
-      pattern_id: 1,
-      description: '??',
-      regex: /^\?\?$/,
+      description: '?@',
+      regex: /^\?\?/,
       extract: () => ({ name: null, count: null, month: null, day: null, start_h: null, end_h: null })
     },
     {
@@ -31,33 +19,18 @@ function normalizeAndCheck(input) {
       regex: /^\？\？$/,
       extract: () => ({ name: null, count: null, month: null, day: null, start_h: null, end_h: null })
     },
-    /*{
-      pattern_id: 1,
-      description: '+-',
-      regex: /.*報名.*(\d{1,2})\/(\d{1,2}).*(\d{1,2})-(\d{1,2}).*$/,
-      extract: ([, mm, dd, h1, h2]) => ({ name: null, count: null, month: mm, day: dd, start_h: h1, end_h: h2  })
-    },
     {
       pattern_id: 1,
-      description: '+-',
-      regex: /.*報名.*(\d{1,2})\/(\d{1,2}).*$/,
-      extract: ([, mm, dd]) => ({ name: null, count: null, month: mm, day: dd, start_h: null, end_h: null })
-    },
-    {
-      pattern_id: 1,
-      description: '+-',
-      regex: /.*報名.*$/,
+      description: '報名',
+      regex: /^報名$/,
       extract: () => ({ name: null, count: null, month: null, day: null, start_h: null, end_h: null })
     },
-
-
     {
       pattern_id: 1,
-      description: '+-',
-      regex: /.*暢打.*$/,
+      description: '報名狀況',
+      regex: /^報名狀況$/,
       extract: () => ({ name: null, count: null, month: null, day: null, start_h: null, end_h: null })
     },
-    */
     {
       pattern_id: 2,
       description: '[Name]+N@MM/DD, H-H',
@@ -114,8 +87,13 @@ function normalizeAndCheck(input) {
     },*/
     {
       pattern_id: 4,
-      description: '+-',
+      description: '+G',
       regex: /^\+G$/,
+      extract: () => ({ name: null, count: null, month: null, day: null, start_h: null, end_h: null })
+    },    {
+      pattern_id: 4,
+      description: '開團',
+      regex: /^開團$/,
       extract: () => ({ name: null, count: null, month: null, day: null, start_h: null, end_h: null })
     },
   ];

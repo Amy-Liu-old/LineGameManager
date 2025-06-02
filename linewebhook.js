@@ -61,48 +61,35 @@ async function getNickName(groupId, userId){
 
 async function createGame(event, res, client, groupId, userId, nickName){
 
-      flexMessage = {
-
-        type: 'flex',
-        altText: '開團',
-        contents: {
-          type: 'carousel',
-          contents: [{
-            type: 'bubble',
-              hero: {
-                type: 'image',
-                url: 'https://www.lifevocloud.com/webhook/assets/createGame.png',
-                size: 'full',
-                aspectRatio: '10:5',
-                aspectMode: 'cover',
-                backgroundColor: '#AFEA37'
+  flexMessage = {
+    type: 'flex',
+    altText: 'Menu',
+    contents: {
+      type: 'bubble',
+      body: {
+        type: 'box',
+        layout: 'vertical',
+        contents: [
+          {
+            type: 'text',
+            text: '請點選進入',
+            weight: 'bold',
+            size: 'lg',
+            margin: 'md'
+          },
+          {
+            type: 'button',
+            style: 'primary',
+            action: {
+                    type: 'uri',
+                    label: '開團',
+                    uri: `https://liff.line.me/1657304004-NPlZynwM?create=1&groupId=${groupId}`
             },
-            body: {
-              type: 'box',
-              layout: 'vertical',
-              contents: [
-                { type: 'text', text: `點選下方連結開團`, weight: 'bold', size: 'md' },
-              ],
-            },
-            footer: {
-              type: 'box',
-              layout: 'horizontal',
-              contents: [
-                {
-                  type: 'button',
-                  style: 'primary',
-                  action: {
-                          type: 'uri',
-                          label: '開團',
-                          uri: `https://liff.line.me/1657304004-NPlZynwM?create=1&groupId=${groupId}`
-                  },
-                },
-              ],
-            },
-          }],
-        },
-      };
-
+          },
+        ]
+        }
+      }
+    };
     await client.replyMessage(event.replyToken, flexMessage);
     res.sendStatus(200);
 }
@@ -110,45 +97,33 @@ async function createGame(event, res, client, groupId, userId, nickName){
 async function viewGame(event, res, client, groupId, userId, nickName){
 
   flexMessage = {
-
-    type: 'flex',
-    altText: '開團',
-    contents: {
-      type: 'carousel',
-      contents: [{
-        type: 'bubble',
-          hero: {
-            type: 'image',
-            url: 'https://www.lifevocloud.com/webhook/assets/createGame.png',
-            size: 'full',
-            aspectRatio: '10:5',
-            aspectMode: 'cover',
-            backgroundColor: '#AFEA37'
+  type: 'flex',
+  altText: 'Menu',
+  contents: {
+    type: 'bubble',
+    body: {
+      type: 'box',
+      layout: 'vertical',
+      contents: [
+        {
+          type: 'text',
+          text: '請點選進入',
+          weight: 'bold',
+          size: 'lg',
+          margin: 'md'
         },
-        body: {
-          type: 'box',
-          layout: 'vertical',
-          contents: [
-            { type: 'text', text: `點選下方連結開團`, weight: 'bold', size: 'md' },
-          ],
+        {
+          type: 'button',
+          style: 'primary',
+          action: {
+                  type: 'uri',
+                  label: '開團',
+                  uri: `https://liff.line.me/1657304004-NPlZynwM?create=2&groupId=${groupId}`
+          },
         },
-        footer: {
-          type: 'box',
-          layout: 'horizontal',
-          contents: [
-            {
-              type: 'button',
-              style: 'primary',
-              action: {
-                      type: 'uri',
-                      label: '開團',
-                      uri: `https://liff.line.me/1657304004-NPlZynwM?create=2&groupId=${groupId}`
-              },
-            },
-          ],
-        },
-      }],
-    },
+      ]
+      }
+    }
   };
 
 await client.replyMessage(event.replyToken, flexMessage);
@@ -338,7 +313,7 @@ app.post('/webhook', line.middleware(config), async (req, res) => {
             */
           }
 
-          flexMessage.text += '\n查詢詳細報名狀況請輸入 ??';
+          flexMessage.text += '\n\n輸入“報名“會出現查詢詳細狀況的選單';
           replyMessages.push(flexMessage);
           await client.replyMessage(event.replyToken, replyMessages);
           res.sendStatus(200);
@@ -393,21 +368,21 @@ app.post('/webhook', line.middleware(config), async (req, res) => {
         }
         if (parseResult.pattern_id == 2 || parseResult.pattern_id == 3)
         {
-          /*
           flexMessage = {
             type: 'text',
             text: '',
           };
           flexMessage.text = '目前有多團需指定場次';
           flexMessage.text += '\nEx: +1@5/16,9-12\nEx: -1@6/7,14-17';
-          flexMessage.text += '\n或輸入 ?? 以選取報名場次';
+          flexMessage.text += '\n或輸入"報名“選取場次報名';
           replyMessages.push(flexMessage);
           await client.replyMessage(event.replyToken, replyMessages);
           res.sendStatus(200);
           return;
-          */
+          /*
           viewGame(event, res, client, groupId, userId, nickName);
-          return;
+          
+          return;*/
         }
     
 
@@ -434,62 +409,65 @@ app.post('/webhook', line.middleware(config), async (req, res) => {
         const levelState = `程度:${formatLevelRange(game.low_level, game.high_level)}`;
         console.log("after gameid="+game.id+" count:"+playerCount); 
 	      return {
-            type: 'bubble',
-              hero: {
-                type: 'image',
-                url: 'https://www.lifevocloud.com/webhook/assets/joinGame.png',
-                size: 'full',
-                aspectRatio: '10:5',
-                aspectMode: 'cover',
-                backgroundColor: '#AFEA37'
-            },
-            body: {
-              type: 'box',
-              layout: 'vertical',
-              contents: [
-                { type: 'text', text: `${game.name} 主揪:${game.leader_name}`, weight: 'bold', size: 'md' },
-                { type: 'text', text: formatGameTitle(game), weight: 'bold', size: 'md' },
-                { type: 'text', text: levelState, weight: 'bold', size: 'md' },
-                { type: 'text', text: joinState, size: 'sm' },
-              ],
-            },
-            footer: {
-              type: 'box',
-              layout: 'horizontal',
-              contents: [
-                {
-                  type: 'button',
-                  style: 'primary',
-                  action: {
-                          type: 'uri',
-                          label: 'Join / Detail',
-                          uri: `https://liff.line.me/1657304004-NPlZynwM?gameId=${game.id}&groupId=${event.source.groupId}`
-                  },
-                },
-              ],
-            },
+          /*  type: 'button',
+            "color": "#ffffff",
+          action: {
+            type: 'uri',
+            label: `${game.name} 主揪:${game.leader_name}`,
+            uri: `https://liff.line.me/1657304004-NPlZynwM?gameId=${game.id}&groupId=${event.source.groupId}`
+          },
+          style: 'primary',
+          margin: 'md'*/
+          
+          type: 'box',
+          layout: 'horizontal',
+          margin: 'md',
+          backgroundColor: '#007AFF', // LINE blue
+          cornerRadius: 'md',
+          paddingAll: 'md',
+          action: {
+            type: 'uri',
+            label: `${game.name} (${game.leader_name})`,
+            uri: `https://liff.line.me/1657304004-NPlZynwM?gameId=${game.id}&groupId=${event.source.groupId}`
+          },
+          contents: [
+            {
+              type: 'text',
+              text: `${game.name} ${formatGameTitle(game)} (${game.leader_name})`,
+              color: '#ffffff',
+              weight: 'regular',
+              size: 'md',
+              align: 'start',
+              wrap: true
+            }
+          ]
+        
           };
        }));
 
         if (bubbles && bubbles.length > 0) {
-        /*  if (replyMessages.length == 0){
-            titleMessage = {
-              type: "text",
-              text: "🏸歡迎點選報名："
-            };
-
-            replyMessages.push(titleMessage);
-          }*/
           flexMessage = {
-
-            type: 'flex',
-            altText: '報名暢打',
-            contents: {
-              type: 'carousel',
-              contents: bubbles,
-            },
+          type: 'flex',
+          altText: 'Menu',
+          contents: {
+            type: 'bubble',
+            body: {
+              type: 'box',
+              layout: 'vertical',
+              contents: [
+                {
+                  type: 'text',
+                  text: '請點選場次',
+                  weight: 'bold',
+                  size: 'lg',
+                  margin: 'md'
+                },
+                ...bubbles
+              ]
+              }
+            }
           };
-          console.log(flexMessage);	
+          console.log(JSON.stringify(flexMessage, null, 2));
         } else {
           flexMessage = {
             type: 'text',
@@ -513,7 +491,7 @@ app.post('/webhook/api/join/:id', async (req, res) => {
   const gameId = req.params.id;           // Get the ID from the URL
   const { nickName, count, userName, userId, groupId } = req.body;
 
-  if (!groupId) return res.status(400).send("Group ID missing");
+  if (!groupId) {}
   console.log(`groupid=${groupId}`)
 
   console.log(`[DEBUG] userName at line XX: ${userName}`);
@@ -607,7 +585,7 @@ app.post('/webhook/api/games', async (req, res) => {
       // Create fix memebers for this game
       const names = fix_members.trim().split(/\s+/).filter(Boolean);
       for (const userName of names) {
-        await joinGame(gameId, userName, userName, create_line_id, count);
+        await joinGame(newGame.id, userName, userName, create_line_id, 1);
         console.log(`joinGame - ${userName}`);
       }
     }

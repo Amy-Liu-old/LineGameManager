@@ -29,13 +29,13 @@
         color: rgb(0, 48, 61);
     }
     header, main { padding: 1rem; }
-    header {
-        
+    header {       
       border-bottom: 1px solid #ccc;
       display: flex;
       flex-direction: column;
       gap: 0.5rem;
     }
+
 
     button {
         width: auto;
@@ -64,38 +64,60 @@
     .day-card h3 {  height: fit-content;text-align: center;}
 
     .day-card {
-    min-width: 200px; /* or 150px, 180px — adjust as needed */
-    width: 200px;
-    display: grid;
-    grid-template-rows: repeat(19, 70px); /* 6:00–24:00 */
-    border: 1px #6c7072;
-    /*margin-top: 0;*/
-    gap: 0 1px; /* No gaps between grid rows */
+      display: grid;
+      grid-template-columns: 40px 120px; /* 👈 wider content */
+      grid-template-rows: auto repeat(19, 70px); /* first row for date title, rest for hours */
+      border: 1px solid #6c7072;
+      min-width: 180px;
+      background: #29b8c1;
     }
 
-    .slot, .occupied {
-    height: 100%;
-    box-sizing: border-box;
+    .day-grid {
+      display: grid;
+      grid-template-columns: 60px 1fr;
+      row-gap: 1px;
+    }
+
+    .hour-col {
+      text-align: right;
+      padding: 0px;
+      font-size: 0.9em;
+      background: #def;
+    }
+
+    .day-title {
+      font-weight: bold;
+      font-size: 1rem;
+      text-align: center;
+      background: #29b8c1;
+      color: #003;
+      padding: 4px 0;
+      border-bottom: 1px solid #888;
+    }
+
+  .hour-label {
     display: flex;
-    flex-direction: column;
+    align-items: center;
     justify-content: center;
-    overflow: hidden;
-    }
+    font-size: 0.75rem;
+    background: #b3e5fc;
+    /*border-right: 1px solid #aaa;*/
+  }
 
+  .slot {
+    background: #b3e5fc;
+  /*  border: 1px solid #999;*/
+  }
 
-    .occupied {
-    background:  hwb(42 68% 2%);
-    border: 1px solid #667074;
-    border-radius: 6px;
-    }
-    .slot.selectable {
+  .slot.occupied {
+    background: #ffe6b3;
+  }
+
+  .slot.selectable:hover {
     cursor: pointer;
-    background: #e1fafb; /* 淡綠 */
-    border: 0.5px solid #667074;
-    }
-    .slot.selectable:hover {
-    background-color: #b0d3e2;
-    }
+    background: #b3e5fc;
+  }
+
     .game-link {
       color: rgb(7, 118, 198);
       cursor: pointer;
@@ -103,14 +125,23 @@
     }
 
     .game-info {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    background-color: hwb(42 68% 2%);
-    padding: 0 4px;
-    height: 100%;
-    font-size: 1rem;
+      display: flex;
+      flex-direction: column; /* stack children vertically */
+      /*align-items: center;*/
+      justify-content: space-between;
+      background-color: hwb(42 68% 2%);
+      padding: 0 0px;
+      /*height: 100%;*/
+      font-size: 1rem;
     }
+
+    .game-buttons {
+      display: flex;
+      flex-direction: row;     /* ensure buttons are side by side */
+      gap: 6px;                /* spacing between buttons */
+      flex-wrap: wrap;         /* allows wrapping if too narrow */
+    }
+
 
     .flat-button {
     padding: 2px 8px;
@@ -133,6 +164,7 @@
   <div class="container">
   <div class="action-section">
     <button class="button" onclick="openCreateGameForm({
+        id: -1,
         start_hour: 9,         // e.g. 14
         end_hour: 12,
         leader_name:window.userName,
@@ -332,7 +364,7 @@ function formatDate(date) {
 
 
     const modalTitle = document.getElementById('modalTitle');
-    if (game.id == undefined){
+    if (game.id == -1){
         modalTitle.innerText ='建立新暢打團';
     }else{
         modalTitle.innerText ='修改';       
@@ -370,9 +402,9 @@ function formatDate(date) {
     game.create_line_group = groupId;
     game.create_line_id = userId;
     log(game.id);
-    const method = game.id ? 'PUT' : 'POST';
+    const method = (game.id == -1) ? 'POST' : 'PUT';
     log(method);
-    await fetch(`/webhook/api/games${game.id ? '/' + game.id : ''}`, {
+    await fetch(`/webhook/api/games${(game.id==-1)? '': '/' + game.id}`, {
       method,
       headers: {'Content-Type': 'application/json'},
       body: JSON.stringify(game)
@@ -425,96 +457,129 @@ function formatDate(date) {
     window.location.href = url;
   }
 
-
-  function renderCalendar(games) {
-    const gameMap = new Map();
-
-    games.forEach(g => {
-        const dateStr = new Date(g.date).toISOString().split('T')[0];
-        const hour = +g.start_hour;
-
-        if (!gameMap.has(dateStr)) {
-            gameMap.set(dateStr, new Map());
-        }
-
-        gameMap.get(dateStr).set(hour, g);
-    });
-    
-    const now = new Date();
-    calendarEl.innerHTML = '';
-    for (let i = 0; i < 7; i++) {
-      const date = new Date(now);
-      let period_hours = 0;
-      date.setDate(now.getDate() + i);
-      const dateStr = date.toISOString().split('T')[0]; // For comparison
-      const displayDate = formatDate(date); // For showing in HTML
-      const card = document.createElement('div');
-      card.className = 'day-card';
-      card.innerHTML = `<h3>${displayDate}</h3>`;
-      console.log(`dateStr=${dateStr} `);
-      for (let h = 6; h <= 24; h++) {
-        const game = gameMap.get(dateStr)?.get(h);
-        if (game) {
-            const duration = game.end_hour - game.start_hour;
-            const block = document.createElement('div');
-            block.className = 'slot occupied';
-            block.style.gridRow = `span ${duration}`;
-            log(JSON.stringify(game));
-            log(`data-groupId=${game.create_line_group} data-userId=${game.create_line_id}`);
-            if (game.expired) {
-                block.innerHTML = `${h}:00 
-                <div class="game-info">
-                    <span class="game-link" onclick='openCreateGameForm(${JSON.stringify(game)})'>${game.name}</span>
-                    <button class="flat-button" data-id="${game.id}" data-group-id="${game.create_line_group}" data-user-id="${game.create_line_id}" onclick="goToWebhook_remove(this)">刪除</button>
-                </div>
-                `;
-            }else{
-            block.innerHTML = `${h}:00 
-                <div class="game-info">
-                    <span class="game-link" onclick='openCreateGameForm(${JSON.stringify(game)})'>${game.name}</span>
-                    <button class="flat-button" data-id="${game.id}" data-group="${game.create_line_group}" onclick="goToWebhook(this)">報名</button>
-                    <button class="flat-button" data-id="${game.id}" data-group-id="${game.create_line_group}" data-user-id="${game.create_line_id}" onclick="goToWebhook_remove(this)">刪除</button>
-                </div>
-                `;
-            }
-            card.appendChild(block);
-
-            h += duration - 1; // skip next hours
-            continue;
-        } else {
-            // Render selectable empty slot
-            const slot = document.createElement('div');
-            slot.className = 'slot selectable';
-            slot.textContent = `${h}:00`;
-            slot.onclick = () => {
-                openCreateGameForm({
-                    date: dateStr,        // e.g. "2025-05-09"
-                    start_hour: h,         // e.g. 14
-                    end_hour: h+1,
-                    leader_name:window.userName,
-                    is_doulbe:true,
-                    max_number:8,
-                    points:25,
-                    low_level:3,
-                    high_level:8,
-                    price:250,
-                    member_price:250,
-                    ball_included: true,
-                    has_duece: false,
-                    is_perweek: true,
-                    skip_thisweek: false,
-                    skip_forever: false,
-                    create_line_id:window.userId,
-                    create_line_group:window.groupId
-                });
-            };
-            card.appendChild(slot);
-        }
-      }
-
-      calendarEl.appendChild(card);
-    }
+  function openCreateGameFormFromData(el) {
+    const game = JSON.parse(decodeURIComponent(el.dataset.game));
+    openCreateGameForm(game);
   }
+  function renderCalendar(games) {
+  const gameMap = new Map();
+  const calendarEl = document.getElementById('calendar'); // Make sure your container has this ID
+
+  games.forEach(g => {
+    const dateStr = new Date(g.date).toISOString().split('T')[0];
+    const hour = +g.start_hour;
+
+    if (!gameMap.has(dateStr)) {
+      gameMap.set(dateStr, new Map());
+    }
+    gameMap.get(dateStr).set(hour, g);
+  });
+
+  const now = new Date();
+  calendarEl.innerHTML = '';
+
+  for (let i = 0; i < 7; i++) {
+    const date = new Date(now);
+    date.setDate(now.getDate() + i);
+    const dateStr = date.toISOString().split('T')[0];
+    const displayDate = `${date.getFullYear()}/${date.getMonth() + 1}/${date.getDate()}(${['日','一','二','三','四','五','六'][date.getDay()]})`;
+
+    const card = document.createElement('div');
+    card.className = 'day-card';
+    card.style.display = 'grid';
+    card.style.gridTemplateColumns = '40px 1fr';
+    card.style.gridTemplateRows = 'auto repeat(19, 70px)';
+
+    // Date title row
+    const title = document.createElement('div');
+    title.className = 'day-title';
+    title.textContent = displayDate;
+    title.style.gridColumn = '1 / span 2';
+    title.style.textAlign = 'center';
+    card.appendChild(title);
+
+    for (let h = 6; h <= 24; h++) {
+      const hourIndex = h - 5+1;
+
+      const game = gameMap.get(dateStr)?.get(h);
+
+      // Hour label (left column)
+      const hourLabel = document.createElement('div');
+      hourLabel.className = 'hour-label';
+      hourLabel.textContent = `${h}:00`;
+      hourLabel.style.gridColumn = '1';
+      hourLabel.style.gridRow = hourIndex;
+      hourLabel.style.display = 'flex';
+      hourLabel.style.justifyContent = 'center';
+      hourLabel.style.alignItems = 'center';
+      card.appendChild(hourLabel);
+    }
+
+    for (let h = 6; h <= 24; h++) {
+      const hourIndex = h - 5+1;
+
+      const game = gameMap.get(dateStr)?.get(h);
+
+      if (game) {
+        const duration = game.end_hour - game.start_hour;
+
+        const block = document.createElement('div');
+        block.className = 'slot occupied';
+        block.style.gridRow = `${hourIndex} / span ${duration}`;
+        block.style.gridColumn = '2';
+        block.innerHTML = `
+          <div class="game-info">
+            <span class="game-link" onclick="openCreateGameFormFromData(this)" data-game='${encodeURIComponent(JSON.stringify(game))}'>${game.name}</span>
+            <div class="game-buttons">
+              ${game.expired ? '' : `
+                <button class="flat-button" data-id="${game.id}" data-group="${game.create_line_group}" onclick="goToWebhook(this)">報名</button>
+              `}
+              <button class="flat-button" data-id="${game.id}" data-group-id="${game.create_line_group}" data-user-id="${game.create_line_id}" onclick="goToWebhook_remove(this)">刪除</button>
+            </div>
+          </div>
+        `;
+
+  
+        card.appendChild(block);
+        h += duration - 1;
+      } else {
+        // Selectable slot
+        const slot = document.createElement('div');
+        slot.className = 'slot selectable';
+        slot.textContent = ``;
+        slot.style.gridColumn = '2';
+        slot.style.gridRow = hourIndex;
+        slot.onclick = () => {
+          openCreateGameForm({
+            id: -1,
+            date: dateStr,
+            start_hour: h,
+            end_hour: h + 1,
+            leader_name: window.userName,
+            is_doulbe: true,
+            max_number: 8,
+            points: 25,
+            low_level: 3,
+            high_level: 8,
+            price: 250,
+            member_price: 250,
+            ball_included: true,
+            has_duece: false,
+            is_perweek: true,
+            skip_thisweek: false,
+            skip_forever: false,
+            create_line_id: window.userId,
+            create_line_group: window.groupId
+          });
+        };
+        card.appendChild(slot);
+      }
+    }
+
+    calendarEl.appendChild(card);
+  }
+}
+
   async function main() {
       try {
         await liff.init({ liffId: "1657304004-NPlZynwM" });
