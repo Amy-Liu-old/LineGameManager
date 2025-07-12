@@ -357,6 +357,7 @@ async function getGameWithPlayers(gameId) {
         g.points,
         g.note,
         g.is_perweek,
+        g.history,
         (g.date + (g.start_hour || ' hours')::interval)::timestamptz AS game_start_utc,
         (now() AT TIME ZONE 'Asia/Taipei') AS current_taipei_time,
         (now() AT TIME ZONE 'Asia/Taipei') > (g.date + (g.start_hour || ' hours')::interval)::timestamptz AS expired
@@ -447,6 +448,41 @@ async function joinGame(gameId, userName, lineNickName, lineUserId, count) {
     console.log(`Checking limit: ${existingPlayerCount} + ${count} = ${existingPlayerCount + count}, allowed: ${game.max_number + 4} ,matched_count= ${matchedPlayers.length}`);
  
     console.log("joinGame 179: userName=",userName);  
+
+    var updatehistory="";
+    const now = new Date();
+
+    const taiwanTime = new Intl.DateTimeFormat('zh-TW', {
+      timeZone: 'Asia/Taipei',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+    }).format(now);
+
+    console.log(taiwanTime); // e.g. "2025/06/27 21:32:45"
+    if (lineNickName != userName){
+      if (count > 1){
+        updatehistory = `${taiwanTime} ${userName}報名${count}位(by ${lineNickName})`;
+      }
+      else{
+        updatehistory = `${taiwanTime} ${userName}報名(by ${lineNickName})`;
+      }
+    }else {
+      if (count > 1){
+        updatehistory = `${taiwanTime} ${lineNickName}報名${count}位`;
+      }
+      else{
+        updatehistory = `${taiwanTime} ${lineNickName}報名`;
+      }
+    }
+    const insertResult = await client.query(
+      'UPDATE games SET history =  $1 || COALESCE(history, \'\')  WHERE id = $2',
+      [`${updatehistory}\n`, gameId]
+    );
+
     for (let i = 0; i < count; i++) {
       let newIndex = i + matchedPlayers.length+1;
       let allIndex = i + existingPlayerCount+ 1
@@ -468,6 +504,7 @@ async function joinGame(gameId, userName, lineNickName, lineUserId, count) {
       } else {
         standbyList.push(`${allIndex-game.max_number}. ${usedUserName}`);
       }
+      
     }
 
     return [true, 0, okList, standbyList];
@@ -505,6 +542,42 @@ async function leaveGame(gameId, userName, lineNickName, count) {
       return [false, -2, null, null, null];
     }
 
+    var updatehistory="";
+    const now = new Date();
+
+    const taiwanTime = new Intl.DateTimeFormat('zh-TW', {
+      timeZone: 'Asia/Taipei',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+    }).format(now);
+
+    console.log(taiwanTime); // e.g. "2025/06/27 21:32:45"
+
+    if (lineNickName != userName){
+      if (count > 1){
+        updatehistory = `${taiwanTime} ${userName}取消${count}位(by ${lineNickName})`;
+      }
+      else{
+        updatehistory = `${taiwanTime} ${userName}取消(by ${lineNickName})`;
+      }
+    }else {
+      if (count > 1){
+        updatehistory = `${taiwanTime} ${lineNickName}取消${count}位`;
+      }
+      else{
+        updatehistory = `${taiwanTime} ${lineNickName}取消`;
+      }
+    }
+
+    const insertResult = await client.query(
+      'UPDATE games SET history = $1 || COALESCE(history, \'\') WHERE id = $2',
+      [`${updatehistory}\n`, gameId]
+    );
+
     let players = playerResult.rows;
     // Remove matching players from end to preserve index integrity
     for (let i = players.length - 1; i >= 0 && count > 0; i--) {
@@ -515,6 +588,8 @@ async function leaveGame(gameId, userName, lineNickName, count) {
         players.splice(i, 1);
         count--;
         console.log("i=",i," game.max_number=",game.max_number);
+
+
         if (i < game.max_number) {
           okList.push(`${i+1}. ${player.name}`);
 

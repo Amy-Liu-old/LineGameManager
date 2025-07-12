@@ -19,7 +19,6 @@ const config = {
   channelSecret,
 };
 
-
 app.use((req, res, next) => {
   console.log(`[${new Date().toISOString()}] ${req.method} ${req.originalUrl}`);
   next();
@@ -172,11 +171,9 @@ function formatLevelRange(low, high) {
 
 // LINE middleware for webhook
 app.post('/webhook', line.middleware(config), async (req, res) => {
-  console.log("what's wrong!");
   const events = req.body.events;
-  console.log("what's wrong!");
   const client = new line.Client(config);
-  console.log("what's wrong!");
+
   for (const event of events) {
     if (event.type === 'message' && event.message.type === 'text') {
       let replyMessages=[];
@@ -672,7 +669,7 @@ app.get('/webhook/', (req, res) => {
 
 
 app.use('/webhook', 
-express.static(path.join(__dirname, 'public'))
+  express.static(path.join(__dirname, 'public'))
 );
 
 /*  

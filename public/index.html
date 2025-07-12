@@ -187,6 +187,7 @@
       <ul id="rightPlayers"></ul>
     </div>
 
+    <div id="gameHistory"></div>
     <!-- Debug log area -->
     <pre id="debugLog" style="background:#f9f9f9;border:1px solid #ccc;padding:10px;white-space:pre-wrap;"></pre>
   </div>
@@ -309,7 +310,7 @@ async function fetchGameInfo(gameId) {
       document.getElementById('leaveBtn').style.display = 'block';
     }
     renderSplitPlayers(data);
-
+    document.getElementById('gameHistory').innerHTML = (data.history ?? "").replace(/\n/g, "<br>");
 
   } catch (err) {
     log('Error fetching game info: ' + err.message);
@@ -523,8 +524,8 @@ const data = await response.json();
       if (!liff.isLoggedIn()) {
         log('Not logged in. Redirecting...');
         const currentUrl = window.location.href;
-        //liff.login({ redirectUri: currentUrl });
-                //liff.login({ redirectUri: currentUrl });
+        liff.login({ redirectUri: currentUrl });
+        liff.login({ redirectUri: currentUrl });
         const stateParam = liff.getContext()?.state;
         log('liff.state: ' + stateParam);
         setGameIdAndFetch(stateParam);
@@ -569,7 +570,7 @@ const data = await response.json();
   }
   </script>
 
-  <!-- App logic -->
-  <script src="/webhook/js/index.js?v=1.0.3"></script>
+  <!-- App logic 
+  <script src="/webhook/js/index.js?v=1.0.3"></script> -->
 </body>
 </html>

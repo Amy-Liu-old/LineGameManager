@@ -342,12 +342,14 @@ function formatDate(date) {
     document.getElementById('gameForm').style.display = 'block';
     const form = document.getElementById('gameForm');
 
-    log(`openCreateGameForm ${game}`);
+    console.log(`openCreateGameForm ${game}`);
     form.reset();
 
     const input = document.getElementById('gameDate');
     const today = new Date();
-    
+    console.log('Script is running');
+    console.log('Taiwan time (Date):', today);
+
     const formatDate = (d) =>
       d.toISOString().split('T')[0];
 

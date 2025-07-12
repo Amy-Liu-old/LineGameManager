@@ -21,7 +21,8 @@ CREATE TABLE games (VARCHAR(60),
     skip_thisweek BOOLEAN DEFAULT FALSE,
     skip_forever BOOLEAN DEFAULT FALSE,
     create_line_group VARCHAR(255),
-    create_line_id VARCHAR(40)
+    create_line_id VARCHAR(40),
+    history TEXT
 
 );
 

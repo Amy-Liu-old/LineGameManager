@@ -39,6 +39,12 @@ function normalizeAndCheck(input) {
     },
     {
       pattern_id: 2,
+      description: '[Name]+N@MM/DD H-H',
+      regex: /^(.*?)\+(\d{1,2})@(\d{1,2})\/(\d{1,2}) (\d{1,2})-(\d{1,2})$/,
+      extract: ([, name, count, mm, dd, h1, h2]) => ({ name, count, month: mm, day: dd, start_h: h1, end_h: h2 })
+    },
+    {
+      pattern_id: 2,
       description: '[Name]+N@MM/DD',
       regex: /^(.*?)\+(\d{1,2})@(\d{1,2})\/(\d{1,2})$/,
       extract: ([, name, count, mm, dd]) => ({ name, count, month: mm, day: dd, start_h: null, end_h: null })
@@ -94,6 +100,12 @@ function normalizeAndCheck(input) {
       pattern_id: 4,
       description: '開團',
       regex: /^開團$/,
+      extract: () => ({ name: null, count: null, month: null, day: null, start_h: null, end_h: null })
+    },
+    {
+      pattern_id: 5,
+      description: '名單',
+      regex: /^名單$/,
       extract: () => ({ name: null, count: null, month: null, day: null, start_h: null, end_h: null })
     },
   ];
